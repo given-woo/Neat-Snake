@@ -2,9 +2,33 @@ import neat
 import os
 import numpy as np
 import visualize
+import math
 import pygame
+import pickle
 
-from game import SnakeGameAI, Direction, Point
+from game import Snake, Direction, Point, SnakeGameAI
+
+REPLAY = False
+
+def replay_genome(config_path, genome_path="winner.pkl"):
+    # Load requried NEAT config
+    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet,
+                                neat.DefaultStagnation, config_path)
+    # Unpickle saved winner
+    with open(genome_path, "rb") as f:
+        genome = pickle.load(f)
+    print(genome)
+    # Convert loaded genome into required data structure
+    genomes = [(1, genome)]
+
+    # Call game with only the loaded genome
+    while True:
+        main(genomes, config)
+    # return genomes
+
+def mapFromTo(x,a,b,c,d):
+   y=(x-a)/(b-a)*(d-c)+c
+   return y
 
 class Agent:
     def __init__(self):
@@ -13,47 +37,155 @@ class Agent:
     def get_state(self, game):
         head = game.snake[0]
 
-        danger_l = 0
-        danger_r = 0
-        danger_u = 0
-        danger_d = 0
-        danger_ul = 0
-        danger_ur = 0
-        danger_dl = 0
-        danger_dr = 0
+        wall_l = 0.
+        wall_r = 0.
+        wall_u = 0.
+        wall_d = 0.
+        wall_ul = 0.
+        wall_ur = 0.
+        wall_dl = 0.
+        wall_dr = 0.
 
-        for i in range(0, 5):
-            point_l = Point(head.x - 20 * (i + 1), head.y)
-            if game.is_collision(point_l):
-                danger_l = 1 / (i+1)
-        for i in range(0, 5):
-            point_r = Point(head.x + 20 * (i + 1), head.y)
-            if game.is_collision(point_r):
-                danger_r = 1 / (i+1)
-        for i in range(0, 5):
-            point_u = Point(head.x, head.y - 20 * (i + 1))
-            if game.is_collision(point_u):
-                danger_u = 1 / (i+1)
-        for i in range(0, 5):
-            point_d = Point(head.x, head.y + 20 * (i + 1))
-            if game.is_collision(point_d):
-                danger_d = 1 / (i+1)
-        for i in range(0, 5):
-            point_ul = Point(head.x - 20 * (i + 1), head.y - 20 * (i + 1))
-            if game.is_collision(point_ul):
-                danger_ul = 1 / (i+1)
-        for i in range(0, 5):
-            point_ur = Point(head.x + 20 * (i + 1), head.y - 20 * (i + 1))
-            if game.is_collision(point_ur):
-                danger_ur = 1 / (i+1)
-        for i in range(0, 5):
-            point_dl = Point(head.x - 20 * (i + 1), head.y + 20 * (i + 1))
-            if game.is_collision(point_dl):
-                danger_dl = 1 / (i+1)
-        for i in range(0, 5):
-            point_dr = Point(head.x + 20 * (i + 1), head.y + 20 * (i + 1))
-            if game.is_collision(point_dr):
-                danger_dr = 1 / (i+1)
+        for i in range(1, 11):
+            point_l = Point(head.x - 40 * i, head.y)
+            if game.is_wall(point_l):
+                wall_l = i / 10
+                break
+        for i in range(1, 11):
+            point_r = Point(head.x + 40 * i, head.y)
+            if game.is_wall(point_r):
+                wall_r = i / 10
+                break
+        for i in range(1, 11):
+            point_u = Point(head.x, head.y - 40 * i)
+            if game.is_wall(point_u):
+                wall_u = i / 10
+                break
+        for i in range(1, 11):
+            point_d = Point(head.x, head.y + 40 * i)
+            if game.is_wall(point_d):
+                wall_d = i / 10
+                break
+        for i in range(1, 11):
+            point_ul = Point(head.x - 40 * i, head.y - 40 * i)
+            if game.is_wall(point_ul):
+                wall_ul = i / 10
+                break
+        for i in range(1, 11):
+            point_ur = Point(head.x + 40 * i, head.y - 40 * i)
+            if game.is_wall(point_ur):
+                wall_ur = i / 10
+                break
+        for i in range(1, 11):
+            point_dl = Point(head.x - 40 * i, head.y + 40 * i)
+            if game.is_wall(point_dl):
+                wall_dl = i / 10
+                break
+        for i in range(1, 11):
+            point_dr = Point(head.x + 40 * i, head.y + 40 * i)
+            if game.is_wall(point_dr):
+                wall_dr = i / 10
+                break
+
+        me_l = 0.
+        me_r = 0.
+        me_u = 0.
+        me_d = 0.
+        me_ul = 0.
+        me_ur = 0.
+        me_dl = 0.
+        me_dr = 0.
+
+        for i in range(1, 11):
+            point_l = Point(head.x - 40 * i, head.y)
+            if game.is_me(point_l):
+                me_l = i / 10
+                break
+        for i in range(1, 11):
+            point_r = Point(head.x + 40 * i, head.y)
+            if game.is_me(point_r):
+                me_r = i / 10
+                break
+        for i in range(1, 11):
+            point_u = Point(head.x, head.y - 40 * i)
+            if game.is_me(point_u):
+                me_u = i / 10
+                break
+        for i in range(1, 11):
+            point_d = Point(head.x, head.y + 40 * i)
+            if game.is_me(point_d):
+                me_d = i / 10
+                break
+        for i in range(1, 11):
+            point_ul = Point(head.x - 40 * i, head.y - 40 * i)
+            if game.is_me(point_ul):
+                me_ul = i / 10
+                break
+        for i in range(1, 11):
+            point_ur = Point(head.x + 40 * i, head.y - 40 * i)
+            if game.is_me(point_ur):
+                me_ur = i / 10
+                break
+        for i in range(1, 11):
+            point_dl = Point(head.x - 40 * i, head.y + 40 * i)
+            if game.is_me(point_dl):
+                me_dl = i / 10
+                break
+        for i in range(1, 11):
+            point_dr = Point(head.x + 40 * i, head.y + 40 * i)
+            if game.is_me(point_dr):
+                me_dr = i / 10
+                break
+
+        food_l = 0.
+        food_r = 0.
+        food_u = 0.
+        food_d = 0.
+        food_ul = 0.
+        food_ur = 0.
+        food_dl = 0.
+        food_dr = 0.
+
+        for i in range(1, 11):
+            point_l = Point(head.x - 40 * i, head.y)
+            if point_l==game.food:
+                food_l = i / 10
+                break
+        for i in range(1, 11):
+            point_r = Point(head.x + 40 * i, head.y)
+            if point_r==game.food:
+                food_r = i / 10
+                break
+        for i in range(1, 11):
+            point_u = Point(head.x, head.y - 40 * i)
+            if point_u==game.food:
+                food_u = i / 10
+                break
+        for i in range(1, 11):
+            point_d = Point(head.x, head.y + 40 * i)
+            if point_d==game.food:
+                food_d = i / 10
+                break
+        for i in range(1, 11):
+            point_ul = Point(head.x - 40 * i, head.y - 40 * i)
+            if point_ul==game.food:
+                food_ul = i / 10
+                break
+        for i in range(1, 11):
+            point_ur = Point(head.x + 40 * i, head.y - 40 * i)
+            if point_ur==game.food:
+                food_ur = i / 10
+                break
+        for i in range(1, 11):
+            point_dl = Point(head.x - 40 * i, head.y + 40 * i)
+            if point_dl==game.food:
+                food_dl = i / 10
+                break
+        for i in range(1, 11):
+            point_dr = Point(head.x + 40 * i, head.y + 40 * i)
+            if point_dr==game.food:
+                food_dr = i / 10
+                break
 
         dir_l = game.direction == Direction.LEFT
         dir_r = game.direction == Direction.RIGHT
@@ -61,72 +193,251 @@ class Agent:
         dir_d = game.direction == Direction.DOWN
 
         state = [
-            # Danger
-            danger_l,
-            danger_r,
-            danger_u,
-            danger_d,
-            danger_ul,
-            danger_ur,
-            danger_dl,
-            danger_dr,
+            # Wall Straight
+            (dir_l and wall_l) or
+            (dir_r and wall_r) or
+            (dir_u and wall_u) or
+            (dir_d and wall_d)
+            ,
 
-            # Move direction
-            dir_l,
-            dir_r,
-            dir_u,
-            dir_d,
+            # Wall Back
+            (dir_l and wall_r) or
+            (dir_r and wall_l) or
+            (dir_u and wall_d) or
+            (dir_d and wall_u)
+            ,
 
-            # Food location
-            game.food.x < game.head.x,  # food left
-            game.food.x > game.head.x,  # food right
-            game.food.y < game.head.y,  # food up
-            game.food.y > game.head.y  # food down
+            # Wall Right
+            (dir_u and wall_r) or
+            (dir_d and wall_l) or
+            (dir_l and wall_u) or
+            (dir_r and wall_d)
+            ,
+
+            # Wall Left
+            (dir_u and wall_l) or
+            (dir_d and wall_r) or
+            (dir_l and wall_d) or
+            (dir_r and wall_u)
+            ,
+
+            # Wall Straight Right
+            (dir_l and wall_ul) or
+            (dir_r and wall_dr) or
+            (dir_u and wall_ur) or
+            (dir_d and wall_dl)
+            ,
+
+            # Wall Straight Left
+            (dir_l and wall_dl) or
+            (dir_r and wall_ur) or
+            (dir_u and wall_ul) or
+            (dir_d and wall_dr)
+            ,
+
+            # Wall Back Right
+            (dir_l and wall_dr) or
+            (dir_r and wall_ul) or
+            (dir_u and wall_dl) or
+            (dir_d and wall_ur)
+            ,
+
+            # Wall Back Left
+            (dir_l and wall_ur) or
+            (dir_r and wall_dl) or
+            (dir_u and wall_dr) or
+            (dir_d and wall_ul)
+            ,
+
+            # Me Straight
+            (dir_l and me_l) or
+            (dir_r and me_r) or
+            (dir_u and me_u) or
+            (dir_d and me_d)
+            ,
+
+            # Me Back
+            (dir_l and me_r) or
+            (dir_r and me_l) or
+            (dir_u and me_d) or
+            (dir_d and me_u)
+            ,
+
+            # Me Right
+            (dir_u and me_r) or
+            (dir_d and me_l) or
+            (dir_l and me_u) or
+            (dir_r and me_d)
+            ,
+
+            # Me Left
+            (dir_u and me_l) or
+            (dir_d and me_r) or
+            (dir_l and me_d) or
+            (dir_r and me_u)
+            ,
+
+            # Me Straight Right
+            (dir_l and me_ul) or
+            (dir_r and me_dr) or
+            (dir_u and me_ur) or
+            (dir_d and me_dl)
+            ,
+
+            # Me Straight Left
+            (dir_l and me_dl) or
+            (dir_r and me_ur) or
+            (dir_u and me_ul) or
+            (dir_d and me_dr)
+            ,
+
+            # Me Back Right
+            (dir_l and me_dr) or
+            (dir_r and me_ul) or
+            (dir_u and me_dl) or
+            (dir_d and me_ur)
+            ,
+
+            # Me Back Left
+            (dir_l and me_ur) or
+            (dir_r and me_dl) or
+            (dir_u and me_dr) or
+            (dir_d and me_ul)
+            ,
+
+            # danger Straight
+            #(dir_l and danger_l) or
+            #(dir_r and danger_r) or
+            #(dir_u and danger_u) or
+            #(dir_d and danger_d)
+            #,
+
+            # danger Right
+            #(dir_u and danger_r) or
+            #(dir_d and danger_l) or
+            #(dir_l and danger_u) or
+            #(dir_r and danger_d)
+            #,
+
+            # danger Left
+            #(dir_u and danger_l) or
+            #(dir_d and danger_r) or
+            #(dir_l and danger_d) or
+            #(dir_r and danger_u)
+            #,
+
+            # danger Straight Right
+            #(dir_l and danger_ul) or
+            #(dir_r and danger_dr) or
+            #(dir_u and danger_ur) or
+            #(dir_d and danger_dl)
+            #,
+
+            # danger Straight Left
+            #(dir_l and danger_dl) or
+            #(dir_r and danger_ur) or
+            #(dir_u and danger_ul) or
+            #(dir_d and danger_dr)
+            #,
+
+            # food Straight
+            (dir_l and food_l) or
+            (dir_r and food_r) or
+            (dir_u and food_u) or
+            (dir_d and food_d)
+            ,
+
+            # food Back
+            (dir_l and food_r) or
+            (dir_r and food_l) or
+            (dir_u and food_d) or
+            (dir_d and food_u)
+            ,
+
+            # food Right
+            (dir_u and food_r) or
+            (dir_d and food_l) or
+            (dir_l and food_u) or
+            (dir_r and food_d)
+            ,
+
+            # food Left
+            (dir_u and food_l) or
+            (dir_d and food_r) or
+            (dir_l and food_d) or
+            (dir_r and food_u)
+            ,
+
+            # food Straight Right
+            (dir_l and food_ul) or
+            (dir_r and food_dr) or
+            (dir_u and food_ur) or
+            (dir_d and food_dl)
+            ,
+
+            # food Straight Left
+            (dir_l and food_dl) or
+            (dir_r and food_ur) or
+            (dir_u and food_ul) or
+            (dir_d and food_dr)
+            ,
+
+            # Food Back Right
+            (dir_l and food_dr) or
+            (dir_r and food_ul) or
+            (dir_u and food_dl) or
+            (dir_d and food_ur)
+            ,
+
+            # Food Back Left
+            (dir_l and food_ur) or
+            (dir_r and food_dl) or
+            (dir_u and food_dr) or
+            (dir_d and food_ul)
+            ,
         ]
 
-        return np.array(state, dtype=int)
+        return np.array(state), math.sqrt(math.pow(game.food.x-game.head.x, 2)+math.pow(game.food.y-game.head.y, 2))
+
+
+agent = Agent()
 
 def main(genomes, config):
-    display = pygame.display.set_mode((400, 400))
+    #display = pygame.display.set_mode((400, 400))
+    #pygame.display.set_caption('Snake')
 
-    agent = Agent()
     nets =[]
     ge = []
     snakes = []
 
+    max_score = 0
+
     for _, g in genomes:
         net = neat.nn.FeedForwardNetwork.create(g, config)
         nets.append(net)
-        snakes.append(SnakeGameAI(display, 400, 400))
-        pygame.display.set_caption('Snake')
+        snakes.append(Snake(400, 400))
         g.fitness = 0
         ge.append(g)
 
     while len(snakes) > 0:
+        #S_AI = SnakeGameAI(snakes, 400, 400, display)
         for x, snake in enumerate(snakes):
-            state_old = agent.get_state(snake)
-            output = nets[x].activate(state_old.tolist())
+            state_old, dis_old = agent.get_state(snake)
+            output = nets[x].activate(state_old)
             final_move = [0, 0, 0]
-            for i in range(0, 3):
-                if output[i] > output[(i + 1) % 3] and output[i] > output[(i + 2) % 3]:
-                    final_move[i] = 1
+            final_move[np.argmax(output)]=1
+            done = False
             reward, done, score = snake.play_step(final_move)
-            ge[x].fitness += reward
-            while not done:
-                state_old = agent.get_state(snake)
-                output = nets[x].activate(state_old.tolist())
-                final_move = [0, 0, 0]
-                for i in range(0, 3):
-                    if output[i]>output[(i+1)%3] and output[i]>output[(i+2)%3]:
-                        final_move[i]=1
-                reward, done, score = snake.play_step(final_move)
-                ge[x].fitness += reward
-
-                if done:
-                    snake.reset()
-                    snakes.pop(x)
-                    nets.pop(x)
-                    ge.pop(x)
+            if score > max_score:
+                max_score = score
+            #state_new, dis_new = agent.get_state(snake)
+            ge[x].fitness = reward
+            if done:
+                snake.reset()
+                snakes.pop(x)
+                nets.pop(x)
+                ge.pop(x)
+        #S_AI.update(len(snakes), max_score)
 
 def run(config_path):
     config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path)
@@ -135,16 +446,20 @@ def run(config_path):
     stat = neat.StatisticsReporter()
     p.add_reporter(stat)
 
-    winner = p.run(main, 200)
+    winner = p.run(main, 1000)
     print('\nBest genome:\n{!s}'.format(winner))
 
-    node_names = {-1: 'danger-straight', -2: 'danger-right', -3: 'danger-left', -4: 'danger-down', -5: 'danger-straight&left', -6: 'danger-straight&right', -7: 'danger-down&left', -8: 'danger-down&right', -9: 'move(l)', -10: 'move(r)', -11: 'move(u)', -12: 'move(d)', -13: 'food(l)', -14: 'food(r)', -15: 'food(u)', -16: 'food(d)', 0: 'straight', 1: 'right', 2: 'left'}
-    visualize.draw_net(config, winner, False, node_names=node_names)
+    visualize.draw_net(config, winner, False)
     visualize.plot_stats(stat, ylog=False, view=False)
+
+    with open("winner.pkl", "wb") as f:
+        pickle.dump(winner, f)
+        f.close()
 
 if __name__ == "__main__":
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, 'config-feedforward.txt')
-    run(config_path)
-    # start 9 : 25 pm
-    # end
+    if REPLAY:
+        replay_genome(config_path)
+    else:
+        run(config_path)
