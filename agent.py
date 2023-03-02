@@ -5,10 +5,16 @@ import visualize
 import math
 import pygame
 import pickle
+import multiprocessing as mp
 
 from game import Snake, Direction, Point, SnakeGameAI
 
-REPLAY = False
+SEE_PROGRESS = True # Set this to False to speed up learning
+REPLAY_FILE = True # Set this to True to display the best genome from last file
+
+BLOCK_WIDTH = 40 # Size of the block
+BLOCKS = 10 # Number of blocks ex) 20 -> (20, 20)
+GENS = 500 # Generation to run
 
 def replay_genome(config_path, genome_path="winner.pkl"):
     # Load requried NEAT config
@@ -23,7 +29,7 @@ def replay_genome(config_path, genome_path="winner.pkl"):
 
     # Call game with only the loaded genome
     while True:
-        main(genomes, config)
+        main_with_progress(genomes, config)
     # return genomes
 
 def mapFromTo(x,a,b,c,d):
@@ -46,47 +52,6 @@ class Agent:
         wall_dl = 0.
         wall_dr = 0.
 
-        for i in range(1, 11):
-            point_l = Point(head.x - 40 * i, head.y)
-            if game.is_wall(point_l):
-                wall_l = i / 10
-                break
-        for i in range(1, 11):
-            point_r = Point(head.x + 40 * i, head.y)
-            if game.is_wall(point_r):
-                wall_r = i / 10
-                break
-        for i in range(1, 11):
-            point_u = Point(head.x, head.y - 40 * i)
-            if game.is_wall(point_u):
-                wall_u = i / 10
-                break
-        for i in range(1, 11):
-            point_d = Point(head.x, head.y + 40 * i)
-            if game.is_wall(point_d):
-                wall_d = i / 10
-                break
-        for i in range(1, 11):
-            point_ul = Point(head.x - 40 * i, head.y - 40 * i)
-            if game.is_wall(point_ul):
-                wall_ul = i / 10
-                break
-        for i in range(1, 11):
-            point_ur = Point(head.x + 40 * i, head.y - 40 * i)
-            if game.is_wall(point_ur):
-                wall_ur = i / 10
-                break
-        for i in range(1, 11):
-            point_dl = Point(head.x - 40 * i, head.y + 40 * i)
-            if game.is_wall(point_dl):
-                wall_dl = i / 10
-                break
-        for i in range(1, 11):
-            point_dr = Point(head.x + 40 * i, head.y + 40 * i)
-            if game.is_wall(point_dr):
-                wall_dr = i / 10
-                break
-
         me_l = 0.
         me_r = 0.
         me_u = 0.
@@ -95,47 +60,6 @@ class Agent:
         me_ur = 0.
         me_dl = 0.
         me_dr = 0.
-
-        for i in range(1, 11):
-            point_l = Point(head.x - 40 * i, head.y)
-            if game.is_me(point_l):
-                me_l = i / 10
-                break
-        for i in range(1, 11):
-            point_r = Point(head.x + 40 * i, head.y)
-            if game.is_me(point_r):
-                me_r = i / 10
-                break
-        for i in range(1, 11):
-            point_u = Point(head.x, head.y - 40 * i)
-            if game.is_me(point_u):
-                me_u = i / 10
-                break
-        for i in range(1, 11):
-            point_d = Point(head.x, head.y + 40 * i)
-            if game.is_me(point_d):
-                me_d = i / 10
-                break
-        for i in range(1, 11):
-            point_ul = Point(head.x - 40 * i, head.y - 40 * i)
-            if game.is_me(point_ul):
-                me_ul = i / 10
-                break
-        for i in range(1, 11):
-            point_ur = Point(head.x + 40 * i, head.y - 40 * i)
-            if game.is_me(point_ur):
-                me_ur = i / 10
-                break
-        for i in range(1, 11):
-            point_dl = Point(head.x - 40 * i, head.y + 40 * i)
-            if game.is_me(point_dl):
-                me_dl = i / 10
-                break
-        for i in range(1, 11):
-            point_dr = Point(head.x + 40 * i, head.y + 40 * i)
-            if game.is_me(point_dr):
-                me_dr = i / 10
-                break
 
         food_l = 0.
         food_r = 0.
@@ -146,46 +70,71 @@ class Agent:
         food_dl = 0.
         food_dr = 0.
 
-        for i in range(1, 11):
-            point_l = Point(head.x - 40 * i, head.y)
-            if point_l==game.food:
-                food_l = i / 10
-                break
-        for i in range(1, 11):
-            point_r = Point(head.x + 40 * i, head.y)
-            if point_r==game.food:
-                food_r = i / 10
-                break
-        for i in range(1, 11):
-            point_u = Point(head.x, head.y - 40 * i)
-            if point_u==game.food:
-                food_u = i / 10
-                break
-        for i in range(1, 11):
-            point_d = Point(head.x, head.y + 40 * i)
-            if point_d==game.food:
-                food_d = i / 10
-                break
-        for i in range(1, 11):
-            point_ul = Point(head.x - 40 * i, head.y - 40 * i)
-            if point_ul==game.food:
-                food_ul = i / 10
-                break
-        for i in range(1, 11):
-            point_ur = Point(head.x + 40 * i, head.y - 40 * i)
-            if point_ur==game.food:
-                food_ur = i / 10
-                break
-        for i in range(1, 11):
-            point_dl = Point(head.x - 40 * i, head.y + 40 * i)
-            if point_dl==game.food:
-                food_dl = i / 10
-                break
-        for i in range(1, 11):
-            point_dr = Point(head.x + 40 * i, head.y + 40 * i)
-            if point_dr==game.food:
-                food_dr = i / 10
-                break
+        for i in range(1, BLOCKS+1):
+            point_l = Point(head.x - BLOCK_WIDTH * i, head.y)
+            if game.is_wall(point_l):
+                wall_l = max(wall_l, 1 / i)
+            if game.is_me(point_l):
+                me_l = max(me_l, 1 / i)
+            if point_l == game.food:
+                food_l = max(food_l, 1 / i)
+
+            point_r = Point(head.x + BLOCK_WIDTH * i, head.y)
+            if game.is_wall(point_r):
+                wall_r = max(wall_r, 1 / i)
+            if game.is_me(point_r):
+                me_r = max(me_r, 1 / i)
+            if point_r == game.food:
+                food_r = max(food_r, 1 / i)
+
+            point_u = Point(head.x, head.y - BLOCK_WIDTH * i)
+            if game.is_wall(point_u):
+                wall_u = max(wall_u, 1 / i)
+            if game.is_me(point_u):
+                me_u = max(me_u, 1 / i)
+            if point_u == game.food:
+                food_u = max(food_u, 1 / i)
+
+            point_d = Point(head.x, head.y + BLOCK_WIDTH * i)
+            if game.is_wall(point_d):
+                wall_d = max(wall_d, 1 / i)
+            if game.is_me(point_d):
+                me_d = max(me_d, 1 / i)
+            if point_d == game.food:
+                food_d = max(food_d, 1 / i)
+
+            point_ul = Point(head.x - BLOCK_WIDTH * i, head.y - BLOCK_WIDTH * i)
+            if game.is_wall(point_ul):
+                wall_ul = max(wall_ul, 1 / i)
+            if game.is_me(point_ul):
+                me_ul = max(me_ul, 1 / i)
+            if point_ul == game.food:
+                food_ul = max(food_ul, 1 / i)
+
+            point_ur = Point(head.x + BLOCK_WIDTH * i, head.y - BLOCK_WIDTH * i)
+            if game.is_wall(point_ur):
+                wall_ur = max(wall_ur, 1 / i)
+            if game.is_me(point_ur):
+                me_ur = max(me_ur, 1 / i)
+            if point_ur == game.food:
+                food_ur = max(food_ur, 1 / i)
+
+            point_dl = Point(head.x - BLOCK_WIDTH * i, head.y + BLOCK_WIDTH * i)
+            if game.is_wall(point_dl):
+                wall_dl = max(wall_dl, 1 / i)
+            if game.is_me(point_dl):
+                me_dl = max(me_dl, 1 / i)
+            if point_dl == game.food:
+                food_dl = max(food_dl, 1 / i)
+
+            point_dr = Point(head.x + BLOCK_WIDTH * i, head.y + BLOCK_WIDTH * i)
+            if game.is_wall(point_dr):
+                wall_dr = max(wall_dr, 1 / i)
+            if game.is_me(point_dr):
+                me_dr = max(me_dr, 1 / i)
+            if point_dr == game.food:
+                food_dr = max(food_dr, 1 / i)
+
 
         dir_l = game.direction == Direction.LEFT
         dir_r = game.direction == Direction.RIGHT
@@ -249,133 +198,98 @@ class Agent:
             (dir_d and wall_ul)
             ,
 
-            # Me Straight
+            # Self Straight
             (dir_l and me_l) or
             (dir_r and me_r) or
             (dir_u and me_u) or
             (dir_d and me_d)
             ,
 
-            # Me Back
+            # Self Back
             (dir_l and me_r) or
             (dir_r and me_l) or
             (dir_u and me_d) or
             (dir_d and me_u)
             ,
 
-            # Me Right
+            # Self Right
             (dir_u and me_r) or
             (dir_d and me_l) or
             (dir_l and me_u) or
             (dir_r and me_d)
             ,
 
-            # Me Left
+            # Self Left
             (dir_u and me_l) or
             (dir_d and me_r) or
             (dir_l and me_d) or
             (dir_r and me_u)
             ,
 
-            # Me Straight Right
+            # Self Straight Right
             (dir_l and me_ul) or
             (dir_r and me_dr) or
             (dir_u and me_ur) or
             (dir_d and me_dl)
             ,
 
-            # Me Straight Left
+            # Self Straight Left
             (dir_l and me_dl) or
             (dir_r and me_ur) or
             (dir_u and me_ul) or
             (dir_d and me_dr)
             ,
 
-            # Me Back Right
+            # Self Back Right
             (dir_l and me_dr) or
             (dir_r and me_ul) or
             (dir_u and me_dl) or
             (dir_d and me_ur)
             ,
 
-            # Me Back Left
+            # Self Back Left
             (dir_l and me_ur) or
             (dir_r and me_dl) or
             (dir_u and me_dr) or
             (dir_d and me_ul)
             ,
 
-            # danger Straight
-            #(dir_l and danger_l) or
-            #(dir_r and danger_r) or
-            #(dir_u and danger_u) or
-            #(dir_d and danger_d)
-            #,
-
-            # danger Right
-            #(dir_u and danger_r) or
-            #(dir_d and danger_l) or
-            #(dir_l and danger_u) or
-            #(dir_r and danger_d)
-            #,
-
-            # danger Left
-            #(dir_u and danger_l) or
-            #(dir_d and danger_r) or
-            #(dir_l and danger_d) or
-            #(dir_r and danger_u)
-            #,
-
-            # danger Straight Right
-            #(dir_l and danger_ul) or
-            #(dir_r and danger_dr) or
-            #(dir_u and danger_ur) or
-            #(dir_d and danger_dl)
-            #,
-
-            # danger Straight Left
-            #(dir_l and danger_dl) or
-            #(dir_r and danger_ur) or
-            #(dir_u and danger_ul) or
-            #(dir_d and danger_dr)
-            #,
-
-            # food Straight
+            # Food Straight
             (dir_l and food_l) or
             (dir_r and food_r) or
             (dir_u and food_u) or
             (dir_d and food_d)
             ,
 
-            # food Back
+            # Food Back
             (dir_l and food_r) or
             (dir_r and food_l) or
             (dir_u and food_d) or
             (dir_d and food_u)
             ,
 
-            # food Right
+            # Food Right
             (dir_u and food_r) or
             (dir_d and food_l) or
             (dir_l and food_u) or
             (dir_r and food_d)
             ,
 
-            # food Left
+            # Food Left
             (dir_u and food_l) or
             (dir_d and food_r) or
             (dir_l and food_d) or
             (dir_r and food_u)
             ,
 
-            # food Straight Right
+            # Food Straight Right
             (dir_l and food_ul) or
             (dir_r and food_dr) or
             (dir_u and food_ur) or
             (dir_d and food_dl)
             ,
 
-            # food Straight Left
+            # Food Straight Left
             (dir_l and food_dl) or
             (dir_r and food_ur) or
             (dir_u and food_ul) or
@@ -403,8 +317,55 @@ class Agent:
 agent = Agent()
 
 def main(genomes, config):
-    #display = pygame.display.set_mode((400, 400))
-    #pygame.display.set_caption('Snake')
+    nets =[]
+    ge = []
+    snakes = []
+
+    max_score = 0
+
+    for _, g in genomes:
+        net = neat.nn.FeedForwardNetwork.create(g, config)
+        nets.append(net)
+        snakes.append(Snake(BLOCK_WIDTH*BLOCKS, BLOCK_WIDTH*BLOCKS))
+        g.fitness = 0
+        ge.append(g)
+
+    while len(snakes) > 0:
+        for x, snake in enumerate(snakes):
+            state_old, dis_old = agent.get_state(snake)
+            output = nets[x].activate(state_old)
+            final_move = [0, 0, 0]
+            final_move[np.argmax(output)]=1
+            reward, done, score = snake.play_step(final_move)
+            if score > max_score:
+                max_score = score
+            ge[x].fitness = reward
+            if done:
+                snake.reset()
+                snakes.pop(x)
+                nets.pop(x)
+                ge.pop(x)
+
+def run(config_path):
+    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path)
+    p = neat.Population(config)
+    p.add_reporter(neat.StdOutReporter(True))
+    stat = neat.StatisticsReporter()
+    p.add_reporter(stat)
+
+    winner = p.run(main, GENS)
+    print('\nBest genome:\n{!s}'.format(winner))
+
+    visualize.draw_net(config, winner, False)
+    visualize.plot_stats(stat, ylog=False, view=False)
+
+    with open("winner.pkl", "wb") as f:
+        pickle.dump(winner, f)
+        f.close()
+
+def main_with_progress(genomes, config):
+    display = pygame.display.set_mode((BLOCK_WIDTH*BLOCKS, BLOCK_WIDTH*BLOCKS))
+    pygame.display.set_caption('Snake')
 
     nets =[]
     ge = []
@@ -415,38 +376,36 @@ def main(genomes, config):
     for _, g in genomes:
         net = neat.nn.FeedForwardNetwork.create(g, config)
         nets.append(net)
-        snakes.append(Snake(400, 400))
+        snakes.append(Snake(BLOCK_WIDTH*BLOCKS, BLOCK_WIDTH*BLOCKS))
         g.fitness = 0
         ge.append(g)
 
     while len(snakes) > 0:
-        #S_AI = SnakeGameAI(snakes, 400, 400, display)
+        S_AI = SnakeGameAI(snakes, BLOCK_WIDTH*BLOCKS, BLOCK_WIDTH*BLOCKS, display)
         for x, snake in enumerate(snakes):
             state_old, dis_old = agent.get_state(snake)
             output = nets[x].activate(state_old)
             final_move = [0, 0, 0]
             final_move[np.argmax(output)]=1
-            done = False
             reward, done, score = snake.play_step(final_move)
             if score > max_score:
                 max_score = score
-            #state_new, dis_new = agent.get_state(snake)
             ge[x].fitness = reward
             if done:
                 snake.reset()
                 snakes.pop(x)
                 nets.pop(x)
                 ge.pop(x)
-        #S_AI.update(len(snakes), max_score)
+        S_AI.update(len(snakes), max_score)
 
-def run(config_path):
+def run_with_progress(config_path):
     config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path)
     p = neat.Population(config)
     p.add_reporter(neat.StdOutReporter(True))
     stat = neat.StatisticsReporter()
     p.add_reporter(stat)
 
-    winner = p.run(main, 1000)
+    winner = p.run(main_with_progress, GENS)
     print('\nBest genome:\n{!s}'.format(winner))
 
     visualize.draw_net(config, winner, False)
@@ -459,7 +418,9 @@ def run(config_path):
 if __name__ == "__main__":
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, 'config-feedforward.txt')
-    if REPLAY:
+    if REPLAY_FILE:
         replay_genome(config_path)
+    elif SEE_PROGRESS:
+        run_with_progress(config_path)
     else:
         run(config_path)

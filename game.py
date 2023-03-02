@@ -26,7 +26,6 @@ GREEN1 = (100, 200, 100)
 BLACK = (0, 0, 0)
 
 BLOCK_SIZE = 40
-SPEED = 60
 
 class Snake:
     def __init__(self, w, h):
@@ -59,10 +58,10 @@ class Snake:
         self.lifetime += 1
         self.frame_iteration += 1
         # 1. collect user input
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
+        #for event in pygame.event.get():
+        #    if event.type == pygame.QUIT:
+        #        pygame.quit()
+        #        quit()
 
         # 2. move
         self._move(action)  # update the head
@@ -169,7 +168,7 @@ class SnakeGameAI:
                 for pt in s.snake:
                     pygame.draw.rect(self.display, GREEN1, pygame.Rect(pt.x, pt.y, BLOCK_SIZE, BLOCK_SIZE))
                     pygame.draw.rect(self.display, GREEN2, pygame.Rect(pt.x + 2, pt.y + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4))
-        left = font.render(str(len)+"/200 Left", 1, (255, 255, 255))
+        left = font.render(str(len)+"/1000 Left", 1, (255, 255, 255))
         score = font.render("Max Score : "+str(max_score), 1, (255, 255, 255))
         self.display.blit(left, (10, 10))
         self.display.blit(score, (10, left.get_height()+10+5))
