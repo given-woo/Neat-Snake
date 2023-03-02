@@ -14,7 +14,7 @@ REPLAY_FILE = True # Set this to True to display the best genome from last file
 
 BLOCK_WIDTH = 40 # Size of the block
 BLOCKS = 10 # Number of blocks ex) 20 -> (20, 20)
-GENS = 500 # Generation to run
+GENS = 10000 # Generation to run
 
 def replay_genome(config_path, genome_path="winner.pkl"):
     # Load requried NEAT config
