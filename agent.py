@@ -1,5 +1,7 @@
 import neat
 import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+
 import numpy as np
 import visualize
 import math
@@ -9,12 +11,12 @@ import multiprocessing as mp
 
 from game import Snake, Direction, Point, SnakeGameAI
 
-SEE_PROGRESS = True # Set this to False to speed up learning
-REPLAY_FILE = True # Set this to True to display the best genome from last file
+SEE_PROGRESS = False # Set this to False to speed up learning
+REPLAY_FILE = False # Set this to True to display the best genome from last file
 
 BLOCK_WIDTH = 40 # Size of the block
 BLOCKS = 10 # Number of blocks ex) 20 -> (20, 20)
-GENS = 10000 # Generation to run
+GENS = 2500 # Generation to run
 
 def replay_genome(config_path, genome_path="winner.pkl"):
     # Load requried NEAT config
@@ -31,10 +33,6 @@ def replay_genome(config_path, genome_path="winner.pkl"):
     while True:
         main_with_progress(genomes, config)
     # return genomes
-
-def mapFromTo(x,a,b,c,d):
-   y=(x-a)/(b-a)*(d-c)+c
-   return y
 
 class Agent:
     def __init__(self):
@@ -316,6 +314,24 @@ class Agent:
 
 agent = Agent()
 
+def snake_process(x, snakes, snake, nets, max_score, ge):
+    # print("process no "+str(x))
+    while True:
+        state_old, dis_old = agent.get_state(snake)
+        output = nets[x].activate(state_old)
+        final_move = [0, 0, 0]
+        final_move[np.argmax(output)] = 1
+        reward, done, score = snake.play_step(final_move)
+        if score > max_score:
+            max_score = score
+        ge[x].fitness = reward
+        if done:
+            snake.reset()
+            snakes.pop(x)
+            nets.pop(x)
+            ge.pop(x)
+            break
+
 def main(genomes, config):
     nets =[]
     ge = []
@@ -330,23 +346,9 @@ def main(genomes, config):
         g.fitness = 0
         ge.append(g)
 
-    while len(snakes) > 0:
-        for x, snake in enumerate(snakes):
-            state_old, dis_old = agent.get_state(snake)
-            output = nets[x].activate(state_old)
-            final_move = [0, 0, 0]
-            final_move[np.argmax(output)]=1
-            reward, done, score = snake.play_step(final_move)
-            if score > max_score:
-                max_score = score
-            ge[x].fitness = reward
-            if done:
-                snake.reset()
-                snakes.pop(x)
-                nets.pop(x)
-                ge.pop(x)
+    for x, snake in enumerate(snakes):
+        snake_process(x, snakes, snake, nets, max_score, ge)
 
-def run(config_path):
     config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path)
     p = neat.Population(config)
     p.add_reporter(neat.StdOutReporter(True))
@@ -386,7 +388,7 @@ def main_with_progress(genomes, config):
             state_old, dis_old = agent.get_state(snake)
             output = nets[x].activate(state_old)
             final_move = [0, 0, 0]
-            final_move[np.argmax(output)]=1
+            final_move[np.argmax(output)] = 1
             reward, done, score = snake.play_step(final_move)
             if score > max_score:
                 max_score = score

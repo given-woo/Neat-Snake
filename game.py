@@ -4,8 +4,12 @@ from enum import Enum
 from collections import namedtuple
 import numpy as np
 
-pygame.init()
-font = pygame.font.Font('04B_19__.TTF', 30)
+SEE_PROGRESS = False # Set this to False to speed up learning
+REPLAY_FILE = False # Set this to True to display the best genome from last file
+
+if SEE_PROGRESS:
+    pygame.init()
+    font = pygame.font.Font('04B_19__.TTF', 30)
 
 class Direction(Enum):
     RIGHT = 1
